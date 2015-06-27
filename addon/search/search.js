@@ -19,12 +19,9 @@
 })(function(CodeMirror) {
   "use strict";
   function searchOverlay(query, caseInsensitive) {
-    if (typeof query == "string")
-      query = new RegExp(query.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"), caseInsensitive ? "gi" : "g");
-    else if (!query.global)
-      query = new RegExp(query.source, query.ignoreCase ? "gi" : "g");
 
-    return {token: function(stream) {
+    return {
+	  token: function(stream) {
       query.lastIndex = stream.pos;
       var match = query.exec(stream.string);
       if (match && match.index == stream.pos) {
@@ -41,9 +38,6 @@
   function SearchState() {
     this.posFrom = this.posTo = this.lastQuery = this.query = null;
     this.overlay = null;
-  }
-  function getSearchState(cm) {
-    return cm.state.search || (cm.state.search = new SearchState());
   }
   function queryCaseInsensitive(query) {
     return typeof query == "string" && query == query.toLowerCase();
@@ -92,17 +86,6 @@
       });
     });
   }
-  function findNext(cm, rev) {cm.operation(function() {
-    var state = getSearchState(cm);
-    var cursor = getSearchCursor(cm, state.query, rev ? state.posFrom : state.posTo);
-    if (!cursor.find(rev)) {
-      cursor = getSearchCursor(cm, state.query, rev ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0));
-      if (!cursor.find(rev)) return;
-    }
-    cm.setSelection(cursor.from(), cursor.to());
-    cm.scrollIntoView({from: cursor.from(), to: cursor.to()});
-    state.posFrom = cursor.from(); state.posTo = cursor.to();
-  });}
   function clearSearch(cm) {cm.operation(function() {
     var state = getSearchState(cm);
     state.lastQuery = state.query;
@@ -157,11 +140,66 @@
       });
     });
   }
-
+	
+  function find(query, pos, options)
+  {
+    var state = this.getSearchState(this);
+	  
+    state.query = query;
+	//this.removeOverlay(state.overlay);
+	//state.overlay = searchOverlay(state.query);
+	//this.addOverlay(state.overlay);
+	  
+    state.posFrom = state.posTo = pos || this.getCursor();
+    CodeMirror.signal(this, 'search', state);
+    this.findNext(options);
+  }
+	
+  function findNext(options)
+  {
+	this.operation(function() {
+      var state = this.getSearchState();
+		
+	  if (!state.query)
+		return;
+		
+      var cursor = this.getSearchCursor(state.query, this.getCursor());
+		
+	  options = options || {};
+	  options.backwards = options.forward===false;
+    
+	  if (!cursor.find(options.backwards))
+	  {
+        cursor = this.getSearchCursor(state.query, {
+		  line: options.backwards ? this.lastLine() : 0,
+		  ch: 0 }
+		);
+		  
+        if (!cursor.find(options.backwards)) return;
+      }
+	  var to = cursor.to();
+	  to.ch = to.ch-1;
+		
+      this.setCursor(options.backwards ? cursor.from() : to);
+      this.scrollIntoView({from: cursor.from(), to: cursor.to()}, 60);
+      state.posFrom = cursor.from(); state.posTo = cursor.to();
+    }, this);
+  }
+	
+  function getSearchState()
+  {
+    return this.state.search || (this.state.search = new SearchState());
+  }
+	
+  CodeMirror.defineExtension('find', find);
+  CodeMirror.defineExtension('findNext', findNext);
+  CodeMirror.defineExtension('getSearchState', getSearchState);
+/*
   CodeMirror.commands.find = function(cm) {clearSearch(cm); doSearch(cm);};
   CodeMirror.commands.findNext = doSearch;
   CodeMirror.commands.findPrev = function(cm) {doSearch(cm, true);};
   CodeMirror.commands.clearSearch = clearSearch;
   CodeMirror.commands.replace = replace;
   CodeMirror.commands.replaceAll = function(cm) {replace(cm, true);};
+  */
 });
