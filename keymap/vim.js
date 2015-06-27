@@ -238,6 +238,13 @@
       cm.setOption('showCursorWhenSelecting', false);
       CodeMirror.signal(cm, "vim-mode-change", {mode: "normal"});
       cm.on('cursorActivity', onCursorActivity);
+	  cm.on('search', function(state) {
+	    var macroModeState = vimGlobalState.macroModeState;
+	    if (macroModeState.isRecording) {
+		  logSearchQuery(macroModeState, state.query);
+	    }
+      });
+		  
       maybeInitVimState(cm);
       CodeMirror.on(cm.getInputField(), 'paste', getOnPasteFn(cm));
     }
@@ -1228,72 +1235,13 @@
             motionArgs: { forward: true, toJumplist: command.searchArgs.toJumplist }
           });
         }
-        function onPromptClose(query) {
-          cm.scrollTo(originalScrollPos.left, originalScrollPos.top);
-          handleQuery(query, true /** ignoreCase */, true /** smartCase */);
-          var macroModeState = vimGlobalState.macroModeState;
-          if (macroModeState.isRecording) {
-            logSearchQuery(macroModeState, query);
-          }
-        }
-        function onPromptKeyUp(e, query, close) {
-          var keyName = CodeMirror.keyName(e), up;
-          if (keyName == 'Up' || keyName == 'Down') {
-            up = keyName == 'Up' ? true : false;
-            query = vimGlobalState.searchHistoryController.nextMatch(query, up) || '';
-            close(query);
-          } else {
-            if ( keyName != 'Left' && keyName != 'Right' && keyName != 'Ctrl' && keyName != 'Alt' && keyName != 'Shift')
-              vimGlobalState.searchHistoryController.reset();
-          }
-          var parsedQuery;
-          try {
-            parsedQuery = updateSearchQuery(cm, query,
-                true /** ignoreCase */, true /** smartCase */);
-          } catch (e) {
-            // Swallow bad regexes for incremental search.
-          }
-          if (parsedQuery) {
-            cm.scrollIntoView(findNext(cm, !forward, parsedQuery), 30);
-          } else {
-            clearSearchHighlight(cm);
-            cm.scrollTo(originalScrollPos.left, originalScrollPos.top);
-          }
-        }
-        function onPromptKeyDown(e, query, close) {
-          var keyName = CodeMirror.keyName(e);
-          if (keyName == 'Esc' || keyName == 'Ctrl-C' || keyName == 'Ctrl-[' ||
-              (keyName == 'Backspace' && query == '')) {
-            vimGlobalState.searchHistoryController.pushInput(query);
-            vimGlobalState.searchHistoryController.reset();
-            updateSearchQuery(cm, originalQuery);
-            clearSearchHighlight(cm);
-            cm.scrollTo(originalScrollPos.left, originalScrollPos.top);
-            CodeMirror.e_stop(e);
-            clearInputState(cm);
-            close();
-            cm.focus();
-          } else if (keyName == 'Ctrl-U') {
-            // Ctrl-U clears input.
-            CodeMirror.e_stop(e);
-            close('');
-          }
-        }
         switch (command.searchArgs.querySrc) {
           case 'prompt':
             var macroModeState = vimGlobalState.macroModeState;
             if (macroModeState.isPlaying) {
               var query = macroModeState.replaySearchQueries.shift();
               handleQuery(query, true /** ignoreCase */, false /** smartCase */);
-            } else {
-              showPrompt(cm, {
-                  onClose: onPromptClose,
-                  prefix: promptPrefix,
-                  desc: searchPromptDesc,
-                  onKeyUp: onPromptKeyUp,
-                  onKeyDown: onPromptKeyDown
-              });
-            }
+            } 
             break;
           case 'wordUnderCursor':
             var word = expandWordUnderCursor(cm, false /** inclusive */,
@@ -1600,16 +1548,7 @@
         return Pos(cur.line + motionArgs.repeat - 1, Infinity);
       },
       findNext: function(cm, _head, motionArgs) {
-        var state = getSearchState(cm);
-        var query = state.getQuery();
-        if (!query) {
-          return;
-        }
-        var prev = !motionArgs.forward;
-        // If search is initiated with ? instead of /, negate direction.
-        prev = (state.isReversed()) ? !prev : prev;
-        highlightSearchMatches(cm, query);
-        return findNext(cm, prev/** prev */, query, motionArgs.repeat);
+	    cm.findNext(motionArgs);
       },
       goToMark: function(cm, _head, motionArgs, vim) {
         var mark = vim.marks[motionArgs.selectedCharacter];
@@ -3881,25 +3820,7 @@
       }
     }
     function findNext(cm, prev, query, repeat) {
-      if (repeat === undefined) { repeat = 1; }
-      return cm.operation(function() {
-        var pos = cm.getCursor();
-        var cursor = cm.getSearchCursor(query, pos);
-        for (var i = 0; i < repeat; i++) {
-          var found = cursor.find(prev);
-          if (i == 0 && found && cursorEqual(cursor.from(), pos)) { found = cursor.find(prev); }
-          if (!found) {
-            // SearchCursor may have returned null because it hit EOF, wrap
-            // around and try again.
-            cursor = cm.getSearchCursor(query,
-                (prev) ? Pos(cm.lastLine()) : Pos(cm.firstLine(), 0) );
-            if (!cursor.find(prev)) {
-              return;
-            }
-          }
-        }
-        return cursor.from();
-      });
+	  cm.findNext({ backwards: prev });
     }
     function clearSearchHighlight(cm) {
       var state = getSearchState(cm);
