@@ -64,28 +64,7 @@
       query = /x^/;
     return query;
   }
-  var queryDialog =
-    'Search: <input type="text" style="width: 10em" class="CodeMirror-search-field"/> <span style="color: #888" class="CodeMirror-search-hint">(Use /re/ syntax for regexp search)</span>';
-  function doSearch(cm, rev) {
-    var state = getSearchState(cm);
-    if (state.query) return findNext(cm, rev);
-    var q = cm.getSelection() || state.lastQuery;
-    dialog(cm, queryDialog, "Search for:", q, function(query) {
-      cm.operation(function() {
-        if (!query || state.query) return;
-        state.query = parseQuery(query);
-        cm.removeOverlay(state.overlay, queryCaseInsensitive(state.query));
-        state.overlay = searchOverlay(state.query, queryCaseInsensitive(state.query));
-        cm.addOverlay(state.overlay);
-        if (cm.showMatchesOnScrollbar) {
-          if (state.annotate) { state.annotate.clear(); state.annotate = null; }
-          state.annotate = cm.showMatchesOnScrollbar(state.query, queryCaseInsensitive(state.query));
-        }
-        state.posFrom = state.posTo = cm.getCursor();
-        findNext(cm, rev);
-      });
-    });
-  }
+	
   function clearSearch(cm) {cm.operation(function() {
     var state = getSearchState(cm);
     state.lastQuery = state.query;
