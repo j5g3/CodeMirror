@@ -68,7 +68,7 @@
     return true;
   }
 
-  CodeMirror.defineOption("continueComments", null, function(cm, val, prev) {
+  CodeMirror.defineOption("continueComments", true, function(cm, val, prev) {
     if (prev && prev != CodeMirror.Init)
       cm.removeKeyMap("continueComment");
     if (val) {
