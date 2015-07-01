@@ -90,7 +90,7 @@
   CodeMirror.defineExtension('getSearchState', getSearchState);
 	
   CodeMirror.commands.findNext = function(cm) { cm.findNext(); };
-  CodeMirror.commands.findPrev = function(cm) { cm.findNext({ backwards: true });
+  CodeMirror.commands.findPrev = function(cm) { cm.findNext({ backwards: true }); };
 /*
   CodeMirror.commands.find = function(cm) {clearSearch(cm); doSearch(cm);};
   CodeMirror.commands.clearSearch = clearSearch;
