@@ -1,4 +1,6 @@
 {
-  "indentWithTabs": false,
-  "tabSize": 2
+  "editor": {
+    "indentWithTabs": false,
+    "tabSize": 2
+  }
 }
