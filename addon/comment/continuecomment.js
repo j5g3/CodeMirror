@@ -13,7 +13,7 @@
 
   for (var i = 0; i < modes.length; ++i)
     CodeMirror.extendMode(modes[i], {blockCommentContinue: " * "});
-
+  
   function continueComment(cm) {
     if (cm.getOption("disableInput")) return CodeMirror.Pass;
     var ranges = cm.listSelections(), mode, inserts = [];
@@ -67,6 +67,43 @@
       return opt.continueLineComment !== false;
     return true;
   }
+  
+  function eachComment(cm, fn)
+  {
+    if (cm.getOption("disableInput")) return CodeMirror.Pass;
+    
+    var ranges = cm.listSelections(), i, range, token, pos, line, start, result, inserts = [];
+    
+    for (i = 0; i < ranges.length; i++)
+    {
+      range = ranges[i];
+    	pos = range.head;
+      start = CodeMirror.Pos(pos.line, 0);
+      token = cm.getTokenAt(range.head);
+      line = cm.getRange(start, CodeMirror.Pos(pos.line, token.end));
+      
+      if (token.type === "comment" && (result = fn(line, token)))
+        inserts.push({ start: start, end: CodeMirror.Pos(pos.line, token.end), insert: result });
+    }
+    
+    if (inserts.length===0)
+      return CodeMirror.Pass;
+    
+    cm.operation(function() {
+      for (i = inserts.length - 1; i >= 0; i--)
+        cm.replaceRange(inserts[i].insert, inserts[i].start, inserts[i].end, "+insert");
+    });
+  }
+  
+  function closeComment(line, token)
+  {
+    var m = /^(\s*\*)(\s*)$/.exec(line);
+    return m && (m[1] + '/' );
+  }
+  
+  function closeCommentHandler(cm) {
+    return eachComment(cm, closeComment);
+  }
 
   CodeMirror.defineOption("continueComments", true, function(cm, val, prev) {
     if (prev && prev != CodeMirror.Init)
@@ -79,6 +116,8 @@
         key = val.key;
       var map = {name: "continueComment"};
       map[key] = continueComment;
+      map['/'] = closeCommentHandler;
+      
       cm.addKeyMap(map);
     }
   });
