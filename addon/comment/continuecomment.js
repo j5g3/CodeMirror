@@ -109,7 +109,7 @@
     if (prev && prev != CodeMirror.Init)
       cm.removeKeyMap("continueComment");
     if (val) {
-      var key = "Enter";
+      var key = "enter";
       if (typeof val == "string")
         key = val;
       else if (typeof val == "object" && val.key)

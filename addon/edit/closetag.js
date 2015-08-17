@@ -39,9 +39,9 @@
     if (!val) return;
     var map = {name: "autoCloseTags"};
     if (typeof val != "object" || val.whenClosing)
-      map["'/'"] = function(cm) { return autoCloseSlash(cm); };
+      map["/"] = function(cm) { return autoCloseSlash(cm); };
     if (typeof val != "object" || val.whenOpening)
-      map["'>'"] = function(cm) { return autoCloseGT(cm); };
+      map[">"] = function(cm) { return autoCloseGT(cm); };
     cm.addKeyMap(map);
   });
 

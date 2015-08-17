@@ -35,9 +35,9 @@
   }
 
   var bind = defaults.pairs + "`";
-  var keyMap = {Backspace: handleBackspace, Enter: handleEnter};
+  var keyMap = {backspace: handleBackspace, enter: handleEnter};
   for (var i = 0; i < bind.length; i++)
-    keyMap["'" + bind.charAt(i) + "'"] = handler(bind.charAt(i));
+    keyMap[bind.charAt(i)] = handler(bind.charAt(i));
 
   function handler(ch) {
     return function(cm) { return handleChar(cm, ch); };
