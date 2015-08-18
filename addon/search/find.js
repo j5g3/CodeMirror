@@ -31,62 +31,116 @@
   }
 
   function SearchState() {
-    this.posFrom = this.posTo = this.lastQuery = this.query = null;
-    this.overlay = null;
+    this.query = this.replace = this.options = this.from = this.to = this.found = null;
   }
 	
-  function find(query, pos, options)
+  function find(query, options)
   {
-    var state = this.getSearchState(this);
-	  
+    var state = this.getSearchState();
+
     state.query = query;
-	//this.removeOverlay(state.overlay);
-	//state.overlay = searchOverlay(state.query);
-	//this.addOverlay(state.overlay);
-	  
-    state.posFrom = state.posTo = pos || this.getCursor();
-    CodeMirror.signal(this, 'search', state);
-    this.findNext(options);
+    state.options = options;
+    //this.removeOverlay(state.overlay);
+    //state.overlay = searchOverlay(state.query);
+    //this.addOverlay(state.overlay);
+
+    //CodeMirror.signal(this, 'search', state);
+    return this.findNext(options);
+  }
+  
+  function findCursor(cm, options)
+  {
+    var state = cm.getSearchState();
+    
+    state.found = state.from = state.to = null;
+
+    if (!state.query)
+      return;
+
+    var cursor = cm.getSearchCursor(state.query, cm.getCursor());
+
+    if (options && 'forward' in options)
+      options.backwards = options.forward===false;
+
+    if (!cursor.find(options && options.backwards))
+    {
+      cursor = cm.getSearchCursor(state.query, {
+        line: options && options.backwards ? cm.lastLine() : 0,
+        ch: 0
+      });
+
+      if (!cursor.find(options && options.backwards)) return;
+    }
+    
+    state.found = true;
+    state.from = cursor.from();
+    state.to = cursor.to();
+    
+    return state;
+  }
+  
+  function moveCursor(cm, from, to, options)
+  {
+    cm.setCursor(options && options.backwards ? from : { line: to.line, ch: to.ch-1});
+    cm.scrollIntoView({from: from, to: to }, 60);
   }
 	
   function findNext(options)
   {
-	this.operation(function() {
-      var state = this.getSearchState();
-		
-	  if (!state.query)
-		return;
-		
-      var cursor = this.getSearchCursor(state.query, this.getCursor());
-		
-	  options = options || {};
-	  options.backwards = options.forward===false;
-    
-	  if (!cursor.find(options.backwards))
-	  {
-        cursor = this.getSearchCursor(state.query, {
-		  line: options.backwards ? this.lastLine() : 0,
-		  ch: 0 }
-		);
-		  
-        if (!cursor.find(options.backwards)) return;
-      }
-	  var to = cursor.to();
-	  to.ch = to.ch-1;
-		
-      this.setCursor(options.backwards ? cursor.from() : to);
-      this.scrollIntoView({from: cursor.from(), to: cursor.to()}, 60);
-      state.posFrom = cursor.from(); state.posTo = cursor.to();
-    }, this);
+    var state = findCursor(this, options);
+
+    if (state.found)
+      moveCursor(this, state.from, state.to, options);
+
+    return state;
   }
 	
   function getSearchState()
   {
     return this.state.search || (this.state.search = new SearchState());
   }
+  
+  function replaceRange(cm, pattern, str, options)
+  {
+  var
+  	text = cm.getRange(options.from, options.to, options.separator),
+    replace
+  ;    
+    if (typeof(pattern)==='string')
+      pattern = new RegExp(pattern, 'g');
+    
+    replace = text.replace(pattern, str);
+    
+    if (text !== replace)
+      cm.replaceRange(replace, options.from, options.to);
+  }
+  
+  /**
+   * Options:
+   * 
+   * forward: true|false
+   * backwards: true|false
+   * from: Position
+   * to: Position. Used to replace a range.
+   * separator: Used as line separator for range replace.
+   */
+  function replace(pattern, str, options)
+  {
+    if (options && options.from && options.to)
+      return replaceRange(this, pattern, str, options);
+    
+    var state = pattern ? this.find(pattern, options) : this.findNext(options);
+    
+    if (str || typeof(str)==='string')
+      state.replace = str;
+    
+    if (state.found)
+      this.replaceRange(state.replace, state.from, state.to);
+  }
 	
   CodeMirror.defineExtension('find', find);
   CodeMirror.defineExtension('findNext', findNext);
+  CodeMirror.defineExtension('replace', replace);
   CodeMirror.defineExtension('getSearchState', getSearchState);
 	
   CodeMirror.commands.findNext = function(cm) { cm.findNext(); };
