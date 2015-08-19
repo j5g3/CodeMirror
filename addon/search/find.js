@@ -54,28 +54,28 @@
     
     state.found = state.from = state.to = null;
 
-    if (!state.query)
-      return;
-
-    var cursor = cm.getSearchCursor(state.query, cm.getCursor());
-
-    if (options && 'forward' in options)
-      options.backwards = options.forward===false;
-
-    if (!cursor.find(options && options.backwards))
+    if (state.query)
     {
-      cursor = cm.getSearchCursor(state.query, {
-        line: options && options.backwards ? cm.lastLine() : 0,
-        ch: 0
-      });
+      var cursor = cm.getSearchCursor(state.query, cm.getCursor());
 
-      if (!cursor.find(options && options.backwards)) return;
+      if (options && 'forward' in options)
+        options.backwards = options.forward===false;
+
+      if (!cursor.find(options && options.backwards))
+      {
+        cursor = cm.getSearchCursor(state.query, {
+          line: options && options.backwards ? cm.lastLine() : 0,
+          ch: 0
+        });
+
+        if (!cursor.find(options && options.backwards)) return state;
+      }
+
+      state.found = true;
+      state.from = cursor.from();
+      state.to = cursor.to();
     }
-    
-    state.found = true;
-    state.from = cursor.from();
-    state.to = cursor.to();
-    
+
     return state;
   }
   
@@ -135,7 +135,7 @@
       state.replace = str;
     
     if (state.found)
-      this.replaceRange(state.replace, state.from, state.to);
+      this.replaceRange(String(state.replace), state.from, state.to);
   }
 	
   CodeMirror.defineExtension('find', find);
