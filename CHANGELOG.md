@@ -1,3 +1,55 @@
+## 5.16.0 (2016-06-20)
+
+### Bugfixes
+
+Fix glitches when dragging content caused by the drop indicator receiving mouse events.
+
+Make Control-drag work on Firefox.
+
+Make clicking or selection-dragging at the end of a wrapped line select the right position.
+
+[show-hint addon](http://codemirror.net/doc/manual.html#addon_show-hint): Prevent widget scrollbar from hiding part of the hint text.
+
+[rulers addon](http://codemirror.net/doc/manual.html#addon_rulers): Prevent rulers from forcing a horizontal editor scrollbar.
+
+### New features
+
+[search addon](http://codemirror.net/doc/manual.html#addon_search): Automatically bind search-related keys in persistent dialog.
+
+[sublime keymap](http://codemirror.net/demo/sublime.html): Add a multi-cursor aware smart backspace binding.
+
+## 5.15.2 (2016-05-20)
+
+### Bugfixes
+
+Fix a critical document corruption bug that occurs when a document is gradually grown.
+
+## 5.15.0 (2016-05-20)
+
+### Bugfixes
+
+Fix bug that caused the selection to reset when focusing the editor in contentEditable input mode.
+
+Fix issue where not all ASCII control characters were being replaced by placeholders.
+
+Remove the assumption that all modes have a `startState` method from several wrapping modes.
+
+Fix issue where the editor would complain about overlapping collapsed ranges when there weren't any.
+
+Optimize document tree building when loading or pasting huge chunks of content.
+
+[markdown mode](http://codemirror.net/mode/markdown/): Fix several issues in matching link targets.
+
+[clike mode](http://codemirror.net/mode/clike/): Improve indentation of C++ template declarations.
+
+### New features
+
+Explicitly bind Ctrl-O on OS X to make that binding (“open line”) act as expected.
+
+Pasting [linewise-copied](http://codemirror.net/doc/manual.html#option_lineWiseCopyCut) content when there is no selection now inserts the lines above the current line.
+
+[javascript mode](http://codemirror.net/mode/javascript/): Support `async`/`await` and improve support for TypeScript type syntax.
+
 ## 5.14.2 (2016-04-20)
 
 ### Bugfixes
